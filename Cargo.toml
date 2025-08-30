@@ -5,6 +5,10 @@ edition = "2024"
 description="A GRPC Gateway which handle the http request and convert into GRPC"
 license = "MIT"
 
+repository = "https://github.com/aniket0951/rust_grpc_gateway"
+homepage = "https://github.com/aniket0951/rust_grpc_gateway"
+documentation = "https://github.com/aniket0951/rust_grpc_gateway"
+
 [dependencies]
 tonic = "0.14.1"
 prost = "0.14.1"
