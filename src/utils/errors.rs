@@ -5,12 +5,13 @@ pub enum ResponseErrors {
     ServiceUnAvailable,
     ServiceNotRegister(String),
     TransportFailure,
+    Error,
 }
 
 impl fmt::Display for ResponseErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let data = match self {
-            Self::Success => String::from("api call has been done"),
+            Self::Success => String::from("success"),
             Self::ServiceUnAvailable => String::from("service unavailable"),
             Self::ServiceNotRegister(service_name) => format!(
                 "{} {}",
@@ -18,6 +19,7 @@ impl fmt::Display for ResponseErrors {
                 String::from("is not register, please register the sevice")
             ),
             Self::TransportFailure => String::from("Unknown transport failure"),
+            Self::Error => String::from("error"),
         };
 
         write!(f, "{}", data)
