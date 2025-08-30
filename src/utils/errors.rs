@@ -1,10 +1,10 @@
 use core::fmt;
-use std::fmt::write;
 
 pub enum ResponseErrors {
     Success,
     ServiceUnAvailable,
     ServiceNotRegister(String),
+    TransportFailure,
 }
 
 impl fmt::Display for ResponseErrors {
@@ -17,6 +17,7 @@ impl fmt::Display for ResponseErrors {
                 service_name,
                 String::from("is not register, please register the sevice")
             ),
+            Self::TransportFailure => String::from("Unknown transport failure"),
         };
 
         write!(f, "{}", data)

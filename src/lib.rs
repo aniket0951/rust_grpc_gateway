@@ -5,6 +5,7 @@ use self::utils::model;
 use self::utils::response::Response;
 
 use lazy_static::lazy_static;
+use reqwest::StatusCode;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -37,6 +38,7 @@ impl Gateway {
                 message: ResponseErrors::ServiceNotRegister(req.service.to_string()).to_string(),
                 status: String::from("faild"),
                 data: None,
+                status_code: StatusCode::BAD_REQUEST,
             };
         }
 
@@ -50,10 +52,20 @@ impl Gateway {
         if grpc_client.is_none() {
             let result = GrpcGateway::new(service_name.as_str()).await;
             if result.is_err() {
+                let err = result.err().unwrap();
+                if err.to_string().to_lowercase().contains("transport error") {
+                    return Response {
+                        message: ResponseErrors::TransportFailure.to_string(),
+                        status: String::from("faild"),
+                        data: None,
+                        status_code: StatusCode::BAD_GATEWAY,
+                    };
+                }
                 return Response {
-                    message: result.err().unwrap().to_string(),
-                    status: String::from("failed"),
+                    message: err.to_string(),
+                    status: String::from("faild"),
                     data: None,
+                    status_code: StatusCode::BAD_REQUEST,
                 };
             }
             let client = result.unwrap();
@@ -76,20 +88,23 @@ impl Gateway {
                     message: ResponseErrors::Success.to_string(),
                     status: String::from("success"),
                     data: converted_data,
+                    status_code: StatusCode::OK,
                 }
             }
             Err(e) => {
-                if e.to_string().contains("status: Unavailable") {
+                if e.to_string().to_lowercase().contains("status: unavailable") {
                     return Response {
                         message: ResponseErrors::ServiceUnAvailable.to_string(),
                         status: String::from("faild"),
                         data: None,
+                        status_code: StatusCode::SERVICE_UNAVAILABLE,
                     };
                 }
                 Response {
-                    message: e.to_string(),
-                    status: String::from("failed"),
+                    message: ResponseErrors::ServiceUnAvailable.to_string(),
+                    status: String::from("faild"),
                     data: None,
+                    status_code: StatusCode::BAD_REQUEST,
                 }
             }
         }
