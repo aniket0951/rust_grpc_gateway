@@ -36,7 +36,7 @@ impl Gateway {
         if service.is_none() {
             return Response {
                 message: ResponseErrors::ServiceNotRegister(req.service.to_string()).to_string(),
-                status: String::from("faild"),
+                status: ResponseErrors::Error.to_string(),
                 data: None,
                 status_code: StatusCode::BAD_REQUEST,
             };
@@ -56,14 +56,14 @@ impl Gateway {
                 if err.to_string().to_lowercase().contains("transport error") {
                     return Response {
                         message: ResponseErrors::TransportFailure.to_string(),
-                        status: String::from("faild"),
+                        status: ResponseErrors::Error.to_string(),
                         data: None,
                         status_code: StatusCode::BAD_GATEWAY,
                     };
                 }
                 return Response {
                     message: err.to_string(),
-                    status: String::from("faild"),
+                    status: ResponseErrors::Error.to_string(),
                     data: None,
                     status_code: StatusCode::BAD_REQUEST,
                 };
@@ -86,7 +86,7 @@ impl Gateway {
                 let converted_data = serde_json::from_value(response).ok();
                 Response {
                     message: ResponseErrors::Success.to_string(),
-                    status: String::from("success"),
+                    status: ResponseErrors::Success.to_string(),
                     data: converted_data,
                     status_code: StatusCode::OK,
                 }
@@ -95,14 +95,14 @@ impl Gateway {
                 if e.to_string().to_lowercase().contains("status: unavailable") {
                     return Response {
                         message: ResponseErrors::ServiceUnAvailable.to_string(),
-                        status: String::from("faild"),
+                        status: ResponseErrors::Error.to_string(),
                         data: None,
                         status_code: StatusCode::SERVICE_UNAVAILABLE,
                     };
                 }
                 Response {
-                    message: ResponseErrors::ServiceUnAvailable.to_string(),
-                    status: String::from("faild"),
+                    message: e.to_string(),
+                    status: ResponseErrors::Error.to_string(),
                     data: None,
                     status_code: StatusCode::BAD_REQUEST,
                 }
