@@ -47,10 +47,6 @@ impl GrpcGateway {
         let full_method_name = format!("/{}/{}", service, method);
         let mut request = tonic::Request::new(request_bytes);
 
-        request
-            .metadata_mut()
-            .insert("authorization", "Bearer some-secret-token".parse().unwrap());
-
         if let Some(config) = servce_config.auth_config {
             match config.auth_type {
                 AuthType::APIKey { header_name, value } => {
