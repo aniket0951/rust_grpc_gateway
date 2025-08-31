@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use self::gateway::gateway::GrpcGateway;
 use self::registery::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
@@ -50,25 +52,25 @@ impl Gateway {
         };
 
         if grpc_client.is_none() {
-            let result = GrpcGateway::new(service_name.as_str()).await;
-            if result.is_err() {
-                let err = result.err().unwrap();
-                if err.to_string().to_lowercase().contains("transport error") {
+            let client = match GrpcGateway::new(service_name.as_str()).await {
+                Ok(client) => client,
+                Err(e) => {
+                    if e.to_string().to_lowercase().contains("transport error") {
+                        return Response {
+                            message: ResponseErrors::TransportFailure.to_string(),
+                            status: ResponseErrors::Error.to_string(),
+                            data: None,
+                            status_code: StatusCode::BAD_GATEWAY,
+                        };
+                    }
                     return Response {
-                        message: ResponseErrors::TransportFailure.to_string(),
+                        message: e.to_string(),
                         status: ResponseErrors::Error.to_string(),
                         data: None,
-                        status_code: StatusCode::BAD_GATEWAY,
+                        status_code: StatusCode::BAD_REQUEST,
                     };
                 }
-                return Response {
-                    message: err.to_string(),
-                    status: ResponseErrors::Error.to_string(),
-                    data: None,
-                    status_code: StatusCode::BAD_REQUEST,
-                };
-            }
-            let client = result.unwrap();
+            };
             // will store the refernce of client connection
             let mp_result = grpc_client_map.lock();
             if mp_result.is_ok() {
