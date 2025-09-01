@@ -1,8 +1,16 @@
-use serde::{Deserialize, Serialize};
+use std::time::Instant;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub enum AuthType {
-    APIKey { header_name: String, value: String },
+    APIKey {
+        header_name: String,
+        value: String,
+    },
+    JWTToken {
+        header_name: String,
+        value: String,
+        expired_at: Instant,
+    },
 }
 #[derive(Debug, Clone)]
 pub struct InternalAuthConfig {

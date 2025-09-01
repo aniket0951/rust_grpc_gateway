@@ -9,7 +9,7 @@ pub struct RequestType {
     pub data: serde_json::Value,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct ServiceRegisterRequest {
     pub service_name: String,
     pub host: String,

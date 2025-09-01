@@ -15,6 +15,7 @@ use std::sync::Mutex;
 pub mod discriptor;
 pub mod gateway;
 pub mod registery;
+pub mod token_orchestrator;
 pub mod utils;
 
 lazy_static! {
@@ -84,7 +85,7 @@ impl Gateway {
 
         let client = grpc_client.unwrap();
         match client
-            .invoke(&&req.service, &req.method, req.data, service_config)
+            .invoke(&req.service, &req.method, req.data, service_config)
             .await
         {
             Ok(response) => {
