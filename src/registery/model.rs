@@ -1,16 +1,8 @@
-use std::time::Instant;
 
 #[derive(Debug, Clone)]
 pub enum AuthType {
-    APIKey {
-        header_name: String,
-        value: String,
-    },
-    JWTToken {
-        header_name: String,
-        value: String,
-        expired_at: Instant,
-    },
+    APIKey { header_name: String, value: String },
+    JWTToken { header_name: String, value: String },
 }
 #[derive(Debug, Clone)]
 pub struct InternalAuthConfig {

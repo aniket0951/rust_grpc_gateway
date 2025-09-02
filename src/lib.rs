@@ -15,7 +15,6 @@ use std::sync::Mutex;
 pub mod discriptor;
 pub mod gateway;
 pub mod registery;
-pub mod token_orchestrator;
 pub mod utils;
 
 lazy_static! {

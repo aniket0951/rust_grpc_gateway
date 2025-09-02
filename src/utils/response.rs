@@ -1,5 +1,4 @@
 use reqwest::StatusCode;
-use serde::Serialize;
 
 #[derive(Debug)]
 pub struct Response {

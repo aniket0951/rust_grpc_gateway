@@ -1,12 +1,11 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use super::model::ServiceConfig;
-use crate::registery::model::{AuthType, InternalAuthConfig};
+use crate::registery::model::InternalAuthConfig;
 use crate::utils::model::ServiceRegisterRequest;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    //static ref GLOBAL_MAP: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
     static ref GLOBAL_MAP: Mutex<HashMap<String, ServiceConfig>> = Mutex::new(HashMap::new());
 }
 
@@ -28,20 +27,6 @@ impl RegistryTrait for ServiceRegistry {
                 .clone()
                 .map(|x| InternalAuthConfig { auth_type: x }),
         };
-        // if auth type is JWT token then start the background process
-        if req.oauth_config.is_some() {
-            let aut_config = req.oauth_config.unwrap();
-            match aut_config {
-                AuthType::APIKey { header_name, value } => {}
-                AuthType::JWTToken {
-                    header_name,
-                    value,
-                    expired_at,
-                } => {
-                    // start background processor
-                }
-            }
-        }
 
         match GLOBAL_MAP.lock() {
             Ok(mut mp) => {

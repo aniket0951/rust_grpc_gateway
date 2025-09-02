@@ -4,9 +4,7 @@ use prost::Message;
 use prost_reflect::{DynamicMessage, ReflectMessage};
 use serde_json::Value;
 use std::sync::Arc;
-use std::time::Instant;
 use tonic::metadata::MetadataKey;
-use tonic::metadata::MetadataValue;
 
 use crate::discriptor::discriptor_manager::ReflectionDiscriptorManager;
 use crate::gateway::dynamic_grpc_client::BytesCodec;
@@ -54,15 +52,9 @@ impl GrpcGateway {
                     let key = MetadataKey::from_bytes(header_name.as_bytes()).unwrap();
                     request.metadata_mut().insert(key, value.parse().unwrap());
                 }
-                AuthType::JWTToken {
-                    header_name,
-                    value,
-                    expired_at,
-                } => {
-                    if expired_at > Instant::now() {
-                        let key = MetadataKey::from_bytes(header_name.as_bytes()).unwrap();
-                        request.metadata_mut().insert(key, value.parse().unwrap());
-                    }
+                AuthType::JWTToken { header_name, value } => {
+                    let key = MetadataKey::from_bytes(header_name.as_bytes()).unwrap();
+                    request.metadata_mut().insert(key, value.parse().unwrap());
                 }
             }
         }
