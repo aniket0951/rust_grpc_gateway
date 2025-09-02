@@ -1,9 +1,10 @@
+
 # gRPC Gateway SDK
 
 A lightweight SDK that allows you to expose your **gRPC services** over **HTTP/JSON**.  
 This SDK accepts HTTP requests, invokes the corresponding gRPC service methods, and returns JSON responses generated from protobuf messages.
 
-SDK doesn't need .proto files to use gRPC based services
+👉 No `.proto` files are required to use your gRPC services with this SDK.
 
 ---
 
@@ -29,9 +30,11 @@ SDK doesn't need .proto files to use gRPC based services
 The Gateway now supports authentication for service communication.  
 When a service registers itself, it can specify the type of authentication and provide the required header and value.
 
-Currently supported auth types:
+### Currently supported auth types:
 - **API_KEY**
 - **JWT_TOKEN**
+
+---
 
 ### Example: Registering a Service with API_KEY Authentication
 
@@ -39,15 +42,10 @@ Currently supported auth types:
 let result = gateway.service_registry.register(ServiceRegisterRequest {
     service_name: String::from("users.UserService"),
     host: String::from("127.0.0.1"),
-    port: String::from("50051"), 
+    port: String::from("50051"),
     oauth_config: Some(AuthType::APIKey {
         header_name: String::from("x-api-key"),
         value: String::from("test_api_token"),
     }),
 });
-
-## 📦 Installation Add this crate to your Cargo.toml:
-toml
-[dependencies]
-grpc_gateway = "0.1.2"
 
