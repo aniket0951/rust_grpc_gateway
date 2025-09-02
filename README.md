@@ -3,7 +3,7 @@
 A lightweight SDK that allows you to expose your **gRPC services** over **HTTP/JSON**.  
 This SDK accepts HTTP requests, invokes the corresponding gRPC service methods, and returns JSON responses generated from protobuf messages.
 
-SDK doesn't need .proto files to user gRPC based services
+SDK doesn't need .proto files to use gRPC based services
 
 ---
 
