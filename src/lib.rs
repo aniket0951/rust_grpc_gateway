@@ -44,15 +44,15 @@ impl Gateway {
             };
         }
 
-        let service_name = service.unwrap();
+        let service_config = service.unwrap();
 
         let mut grpc_client = match grpc_client_map.lock() {
-            Ok(mp) => mp.get(&service_name.to_string()).cloned(),
+            Ok(mp) => mp.get(&service_config.endpoint.to_string()).cloned(),
             Err(_) => None,
         };
 
         if grpc_client.is_none() {
-            let client = match GrpcGateway::new(service_name.as_str()).await {
+            let client = match GrpcGateway::new(service_config.endpoint.as_str()).await {
                 Ok(client) => client,
                 Err(e) => {
                     if e.to_string().to_lowercase().contains("transport error") {
@@ -76,14 +76,17 @@ impl Gateway {
             if mp_result.is_ok() {
                 mp_result
                     .unwrap()
-                    .insert(service_name.to_string(), client.clone());
+                    .insert(service_config.endpoint.to_string(), client.clone());
             };
 
             grpc_client = Some(client)
         }
 
         let client = grpc_client.unwrap();
-        match client.invoke(&&req.service, &req.method, req.data).await {
+        match client
+            .invoke(&req.service, &req.method, req.data, service_config)
+            .await
+        {
             Ok(response) => {
                 let converted_data = serde_json::from_value(response).ok();
                 Response {

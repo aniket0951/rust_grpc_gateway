@@ -4,9 +4,11 @@ use prost::Message;
 use prost_reflect::{DynamicMessage, ReflectMessage};
 use serde_json::Value;
 use std::sync::Arc;
+use tonic::metadata::MetadataKey;
 
 use crate::discriptor::discriptor_manager::ReflectionDiscriptorManager;
 use crate::gateway::dynamic_grpc_client::BytesCodec;
+use crate::registery::model::{AuthType, ServiceConfig};
 
 #[derive(Debug, Clone)]
 pub struct GrpcGateway {
@@ -26,6 +28,7 @@ impl GrpcGateway {
         service: &str,
         method: &str,
         data: Value,
+        servce_config: ServiceConfig,
     ) -> Result<serde_json::Value> {
         // get method discriptor from cache
         let method_desc = self
@@ -43,9 +46,18 @@ impl GrpcGateway {
         let full_method_name = format!("/{}/{}", service, method);
         let mut request = tonic::Request::new(request_bytes);
 
-        request
-            .metadata_mut()
-            .insert("authorization", "Bearer some-secret-token".parse().unwrap());
+        if let Some(config) = servce_config.auth_config {
+            match config.auth_type {
+                AuthType::APIKey { header_name, value } => {
+                    let key = MetadataKey::from_bytes(header_name.as_bytes()).unwrap();
+                    request.metadata_mut().insert(key, value.parse().unwrap());
+                }
+                AuthType::JWTToken { header_name, value } => {
+                    let key = MetadataKey::from_bytes(header_name.as_bytes()).unwrap();
+                    request.metadata_mut().insert(key, value.parse().unwrap());
+                }
+            }
+        }
 
         // create dynamic client using shared channel
         let channel = self.discriptor_manager.channel.clone();
