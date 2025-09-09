@@ -1,16 +1,19 @@
 #![doc = include_str!("../README.md")]
 
 use self::gateway::gateway::GrpcGateway;
+use self::registery::model::{AuthType, RefreshTokenResponse, ServiceConfig};
 use self::registery::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
 use self::utils::model;
 use self::utils::response::Response;
-
 use lazy_static::lazy_static;
 use reqwest::StatusCode;
+use serde_json::json;
 
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod discriptor;
 pub mod gateway;
@@ -25,13 +28,23 @@ pub struct Gateway {
     pub service_registry: ServiceRegistry,
 }
 
+impl Default for Gateway {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Gateway {
     pub fn new() -> Self {
         Self {
             service_registry: ServiceRegistry {},
         }
     }
-
+    pub async fn refresh_invoker(
+        &self,
+        service_config: ServiceConfig,
+    ) -> Result((), Box<dyn Error>) {
+    }
     pub async fn invoker(&self, req: model::RequestType) -> Response {
         let service = self.service_registry.discover(req.service.to_string());
 
@@ -83,6 +96,61 @@ impl Gateway {
         }
 
         let client = grpc_client.unwrap();
+
+        // check for auth is valid or not
+        if service_config.auth_config.is_some() {
+            let oauth_config = service_config.clone().auth_config.unwrap();
+            match oauth_config.auth_type {
+                AuthType::APIKey {
+                    header_name: _,
+                    value: _,
+                } => {}
+                AuthType::JWTToken {
+                    header_name: _,
+                    value: _,
+                } => {
+                    if oauth_config.auth_refresh_config.is_some() {
+                        let refresh_config = oauth_config.auth_refresh_config.unwrap().clone();
+                        let now = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs();
+
+                        if now > refresh_config.expired_at.clone() {
+                            // need to refresh the token
+                            let refresh_resp = client
+                                .refresh_oauth(
+                                    &refresh_config.service_name,
+                                    &refresh_config.method,
+                                    json!({
+                                         "refresh_token":refresh_config.refresh_token
+                                    }),
+                                )
+                                .await;
+
+                            if refresh_resp.is_err() {
+                                return Response {
+                                    message: ResponseErrors::InternalServerError.to_string(),
+                                    status: ResponseErrors::Error.to_string(),
+                                    data: None,
+                                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                                };
+                            }
+
+                            // unmarshal refresh response and update token into config
+                            let response = refresh_resp.unwrap();
+
+                            let current_resp: RefreshTokenResponse =
+                                serde_json::from_value(response)
+                                    .expect("refresh token config faild");
+
+
+                        }
+                    }
+                }
+            }
+        }
+
         match client
             .invoke(&req.service, &req.method, req.data, service_config)
             .await

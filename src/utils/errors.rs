@@ -6,6 +6,8 @@ pub enum ResponseErrors {
     ServiceNotRegister(String),
     TransportFailure,
     Error,
+    OAuthRefreshConfigMissingError,
+    InternalServerError,
 }
 
 impl fmt::Display for ResponseErrors {
@@ -20,6 +22,8 @@ impl fmt::Display for ResponseErrors {
             ),
             Self::TransportFailure => String::from("Unknown transport failure"),
             Self::Error => String::from("error"),
+            Self::OAuthRefreshConfigMissingError => String::from("oauth refresh config is missing"),
+            Self::InternalServerError => String::from("internal server error"),
         };
 
         write!(f, "{}", data)
