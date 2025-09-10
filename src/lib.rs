@@ -6,6 +6,7 @@ use self::registery::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
 use self::utils::model;
 use self::utils::response::Response;
+use self::utils::validation_errors::ValidationError;
 use lazy_static::lazy_static;
 use reqwest::StatusCode;
 use serde_json::json;
@@ -43,7 +44,84 @@ impl Gateway {
     pub async fn refresh_invoker(
         &self,
         service_config: ServiceConfig,
-    ) -> Result((), Box<dyn Error>) {
+    ) -> Result<(), Box<dyn Error>> {
+        let mut grpc_client = match grpc_client_map.lock() {
+            Ok(mp) => mp.get(&service_config.endpoint.to_string()).cloned(),
+            Err(_) => None,
+        };
+
+        if grpc_client.is_none() {
+            let client = match GrpcGateway::new(service_config.endpoint.as_str()).await {
+                Ok(client) => client,
+                Err(e) => {
+                    if e.to_string().to_lowercase().contains("transport error") {
+                        return Err(Box::new(ValidationError(
+                            ResponseErrors::TransportFailure.to_string(),
+                        )));
+                    }
+                    return Err(Box::new(ValidationError(e.to_string())));
+                }
+            };
+            if let Ok(mut mp) = grpc_client_map.lock() {
+                mp.insert(service_config.endpoint.to_string(), client.clone());
+                grpc_client = Some(client)
+            }
+            // will store the refernce of client connection
+        }
+        let client = grpc_client.unwrap();
+        match service_config.auth_config {
+            Some(config) => match config.auth_refresh_config {
+                Some(mut refresh_config) => {
+                    match client
+                        .refresh_oauth(
+                            &refresh_config.service_name,
+                            &refresh_config.method,
+                            json!({
+                                "refresh_token": refresh_config.refresh_token,
+                            }),
+                        )
+                        .await
+                    {
+                        Ok(response) => {
+                            // should update oauth config
+                            let (access_token, refresh_token, expired_at) = (
+                                response.get("access_token"),
+                                response.get("refresh_token"),
+                                response.get("expired_at"),
+                            );
+
+                            if let Some(token) = access_token {
+                                refresh_config.access_token =
+                                    token.as_str().unwrap_or_default().to_string();
+                            }
+
+                            if let Some(token) = refresh_token {
+                                refresh_config.refresh_token =
+                                    token.as_str().unwrap_or_default().to_string();
+                            }
+
+                            if let Some(expires) = expired_at {
+                                refresh_config.expired_at = expires.as_u64().unwrap_or_default();
+                            }
+                        }
+                        Err(e) => {
+                            return Err(Box::new(ValidationError(e.to_string())));
+                        }
+                    }
+                }
+                None => {
+                    return Err(Box::new(ValidationError(String::from(
+                        "refresh config not availabel",
+                    ))));
+                }
+            },
+            None => {
+                return Err(Box::new(ValidationError(String::from(
+                    "refresh config not availabel",
+                ))));
+            }
+        };
+        Ok(())
     }
     pub async fn invoker(&self, req: model::RequestType) -> Response {
         let service = self.service_registry.discover(req.service.to_string());
@@ -85,14 +163,10 @@ impl Gateway {
                 }
             };
             // will store the refernce of client connection
-            let mp_result = grpc_client_map.lock();
-            if mp_result.is_ok() {
-                mp_result
-                    .unwrap()
-                    .insert(service_config.endpoint.to_string(), client.clone());
-            };
-
-            grpc_client = Some(client)
+            if let Ok(mut mp) = grpc_client_map.lock() {
+                mp.insert(service_config.endpoint.to_string(), client.clone());
+                grpc_client = Some(client)
+            }
         }
 
         let client = grpc_client.unwrap();
@@ -116,17 +190,9 @@ impl Gateway {
                             .unwrap()
                             .as_secs();
 
-                        if now > refresh_config.expired_at.clone() {
+                        if now > refresh_config.expired_at {
                             // need to refresh the token
-                            let refresh_resp = client
-                                .refresh_oauth(
-                                    &refresh_config.service_name,
-                                    &refresh_config.method,
-                                    json!({
-                                         "refresh_token":refresh_config.refresh_token
-                                    }),
-                                )
-                                .await;
+                            let refresh_resp = self.refresh_invoker(service_config.clone()).await;
 
                             if refresh_resp.is_err() {
                                 return Response {
@@ -136,15 +202,6 @@ impl Gateway {
                                     status_code: StatusCode::INTERNAL_SERVER_ERROR,
                                 };
                             }
-
-                            // unmarshal refresh response and update token into config
-                            let response = refresh_resp.unwrap();
-
-                            let current_resp: RefreshTokenResponse =
-                                serde_json::from_value(response)
-                                    .expect("refresh token config faild");
-
-
                         }
                     }
                 }

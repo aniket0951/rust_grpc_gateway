@@ -26,6 +26,11 @@ pub trait RegistryTrait {
         req: ServiceRegisterRequest,
     ) -> impl std::future::Future<Output = Result<Option<String>, Box<dyn Error>>> + Send;
     fn discover(&self, service_name: String) -> Option<ServiceConfig>;
+    fn update_auth_config(
+        &self,
+        service_name: String,
+        oauth_config: InternalAuthConfig,
+    ) -> Result<(), Box<dyn Error>>;
 }
 
 pub struct ServiceRegistry {}
@@ -67,6 +72,21 @@ impl RegistryTrait for ServiceRegistry {
         match GLOBAL_MAP.lock() {
             Ok(mp) => mp.get(&service_name).cloned(),
             Err(_) => None,
+        }
+    }
+
+    fn update_auth_config(
+        &self,
+        service_name: String,
+        auth_config: InternalAuthConfig,
+    ) -> Result<(), Box<dyn Error>> {
+        match GLOBAL_MAP.lock() {
+            Ok(mut mp) => {
+                mp.entry(service_name.to_string())
+                    .and_modify(|service_config| service_config.auth_config = Some(auth_config));
+                Ok(())
+            }
+            Err(_) => todo!(),
         }
     }
 
