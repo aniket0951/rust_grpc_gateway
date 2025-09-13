@@ -33,22 +33,6 @@ impl ResponseErrors {
 
 impl fmt::Display for ResponseErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // let data = match self {
-        //     Self::Success => String::from("success"),
-        //     Self::ServiceUnAvailable => String::from("service unavailable"),
-        //     Self::ServiceNotRegister(service_name) => format!(
-        //         "{} {}",
-        //         service_name,
-        //         String::from("is not register, please register the sevice")
-        //     ),
-        //     Self::TransportFailure => String::from("Unknown transport failure"),
-        //     Self::Error => String::from("error"),
-        //     Self::OAuthRefreshConfigMissingError => String::from("oauth refresh config is missing"),
-        //     Self::InternalServerError => String::from("internal server error"),
-        // };
-        //
-        // write!(f, "{}", data)
-
         f.write_str(&self.message())
     }
 }
