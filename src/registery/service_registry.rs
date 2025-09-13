@@ -1,6 +1,9 @@
 use super::model::{AuthType, ServiceConfig};
 use crate::gateway::gateway::GrpcGateway;
-use crate::registery::model::{AuthRefreshConfig, InternalAuthConfig};
+use crate::registery::api_key::APIKeyAuth;
+use crate::registery::auth::AuthConfig;
+use crate::registery::jwt_token::JWTTokenAuth;
+use crate::registery::model::InternalAuthConfig;
 use crate::utils::errors::ResponseErrors;
 use crate::utils::model::ServiceRegisterRequest;
 use crate::utils::validation_errors::ValidationError;
@@ -26,11 +29,6 @@ pub trait RegistryTrait {
         req: ServiceRegisterRequest,
     ) -> impl std::future::Future<Output = Result<Option<String>, Box<dyn Error>>> + Send;
     fn discover(&self, service_name: String) -> Option<ServiceConfig>;
-    fn update_auth_config(
-        &self,
-        service_name: String,
-        oauth_config: InternalAuthConfig,
-    ) -> Result<(), Box<dyn Error>>;
 }
 
 pub struct ServiceRegistry {}
@@ -57,7 +55,27 @@ impl RegistryTrait for ServiceRegistry {
             )));
         }
 
-        config.auth_config = Some(req.oauth_config);
+        let auth_config = req.oauth_config.auth_refresh_config.unwrap();
+        //config.auth_config = Some(req.oauth_config);
+
+        match req.oauth_config.auth_type {
+            AuthType::APIKey => {
+                config.auth_config = Some(AuthConfig::APIKeyAuth(APIKeyAuth {
+                    header_name: auth_config.header_name,
+                    value: auth_config.access_token,
+                }));
+            }
+            AuthType::JWTToken => {
+                config.auth_config = Some(AuthConfig::JWTTokenAuth(JWTTokenAuth {
+                    header_name: auth_config.header_name,
+                    access_token: auth_config.access_token,
+                    refresh_token: auth_config.refresh_token,
+                    expired_at: auth_config.expired_at,
+                    service_name: auth_config.service_name,
+                    method: auth_config.method,
+                }));
+            }
+        };
 
         match GLOBAL_MAP.lock() {
             Ok(mut mp) => {
@@ -75,35 +93,14 @@ impl RegistryTrait for ServiceRegistry {
         }
     }
 
-    fn update_auth_config(
-        &self,
-        service_name: String,
-        auth_config: InternalAuthConfig,
-    ) -> Result<(), Box<dyn Error>> {
-        match GLOBAL_MAP.lock() {
-            Ok(mut mp) => {
-                mp.entry(service_name.to_string())
-                    .and_modify(|service_config| service_config.auth_config = Some(auth_config));
-                Ok(())
-            }
-            Err(_) => todo!(),
-        }
-    }
-
     async fn validate_oauth_config(
         &self,
         oauth_config: InternalAuthConfig,
         service_endpoint: String,
     ) -> Result<(), Box<dyn Error>> {
         match oauth_config.auth_type {
-            AuthType::APIKey {
-                header_name: _,
-                value: _,
-            } => Ok(()),
-            AuthType::JWTToken {
-                header_name: _,
-                value: _,
-            } => {
+            AuthType::APIKey => Ok(()),
+            AuthType::JWTToken => {
                 if oauth_config.auth_refresh_config.is_none() {
                     return Err(Box::new(ValidationError(
                         ResponseErrors::OAuthRefreshConfigMissingError.to_string(),
