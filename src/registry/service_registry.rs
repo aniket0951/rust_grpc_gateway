@@ -1,9 +1,9 @@
 use super::model::{AuthType, ServiceConfig};
 use crate::gateway::gateway::GrpcGateway;
-use crate::registery::api_key::APIKeyAuth;
-use crate::registery::auth::AuthConfig;
-use crate::registery::jwt_token::JWTTokenAuth;
-use crate::registery::model::InternalAuthConfig;
+use crate::registry::api_key::APIKeyAuth;
+use crate::registry::auth::AuthConfig;
+use crate::registry::jwt_token::JWTTokenAuth;
+use crate::registry::model::InternalAuthConfig;
 use crate::utils::errors::ResponseErrors;
 use crate::utils::model::ServiceRegisterRequest;
 use crate::utils::validation_errors::ValidationError;

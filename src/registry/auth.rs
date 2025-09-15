@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::error::Error;
 
 use crate::{
-    registery::{api_key::APIKeyAuth, jwt_token::JWTTokenAuth},
+    registry::{api_key::APIKeyAuth, jwt_token::JWTTokenAuth},
     utils::validation_errors::ValidationError,
 };
 
@@ -12,7 +12,6 @@ pub trait Auth: Send + Sync + std::fmt::Debug {
     fn requires_refresh(&self) -> bool {
         false
     }
-    //async fn refresh_if_expired(&self, service_endpoint: &str) -> Result<(), Box<dyn Error>>;
 }
 
 #[derive(Debug, Clone)]
@@ -59,10 +58,6 @@ impl Refreshable for AuthConfig {
                     .as_secs();
 
                 if now < jwt.expired_at {
-                    println!(
-                        "token has been expired refreshing new one {:?}",
-                        jwt.access_token
-                    );
                     let result = jwt.refresh_token(service_endpoint).await;
                     if result.is_err() {
                         return Err(Box::new(ValidationError(result.err().unwrap().to_string())));
@@ -70,7 +65,6 @@ impl Refreshable for AuthConfig {
                     let access_token = result.unwrap();
                     Ok(access_token)
                 } else {
-                    println!("token didn't expired , using old toke only");
                     Ok(jwt.access_token.clone())
                 }
             }

@@ -1,8 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 use self::gateway::gateway::GrpcGateway;
-use self::registery::model::ServiceConfig;
-use self::registery::service_registry::{RegistryTrait, ServiceRegistry};
+use self::registry::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
 use self::utils::model;
 use self::utils::response::Response;
@@ -16,7 +15,7 @@ use std::sync::Mutex;
 
 pub mod discriptor;
 pub mod gateway;
-pub mod registery;
+pub mod registry;
 pub mod utils;
 
 lazy_static! {

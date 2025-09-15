@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::registery::model::InternalAuthConfig;
+use crate::registry::model::InternalAuthConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestType {

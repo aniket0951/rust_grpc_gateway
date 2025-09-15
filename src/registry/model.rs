@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::registery::auth::AuthConfig;
-
-use super::auth::Auth;
+use crate::registry::auth::AuthConfig;
 
 #[derive(Debug, Clone)]
 pub enum AuthType {
@@ -32,9 +30,6 @@ pub struct ServiceConfig {
     pub service_name: String,
     //pub auth_config: Option<Arc<dyn Auth>>,
     pub auth_config: Option<AuthConfig>,
-}
-impl ServiceConfig {
-    pub fn update_auth_refresh_config(&self, auth_refresh_config: AuthRefreshConfig) {}
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

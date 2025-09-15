@@ -2,7 +2,7 @@ use super::auth::Auth;
 use crate::gateway::gateway::GrpcGateway;
 use crate::grpc_client_map;
 
-use crate::registery::model::RefreshAuthTokenJson;
+use crate::registry::model::RefreshAuthTokenJson;
 use crate::utils::errors::ResponseErrors;
 use crate::utils::validation_errors::ValidationError;
 use std::error::Error;
@@ -78,6 +78,6 @@ impl JWTTokenAuth {
         self.refresh_token = data.refresh_token.to_string();
         self.expired_at = data.expired_at;
 
-        Ok(String::from(""))
+        Ok(self.access_token.to_string())
     }
 }

@@ -9,8 +9,8 @@ use tonic::metadata::{MetadataKey, MetadataValue};
 
 use crate::discriptor::discriptor_manager::ReflectionDiscriptorManager;
 use crate::gateway::dynamic_grpc_client::BytesCodec;
-use crate::registery::auth::{Auth, Refreshable};
-use crate::registery::model::ServiceConfig;
+use crate::registry::auth::{Auth, Refreshable};
+use crate::registry::model::ServiceConfig;
 use crate::utils::validation_errors::ValidationError;
 
 #[derive(Debug, Clone)]
