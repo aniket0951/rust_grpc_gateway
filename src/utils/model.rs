@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::registery::model::AuthType;
+use crate::registry::model::InternalAuthConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestType {
@@ -15,5 +15,5 @@ pub struct ServiceRegisterRequest {
     pub host: String,
     pub port: String,
     pub health_check_endpoint: String,
-    pub oauth_config: Option<AuthType>,
+    pub oauth_config: InternalAuthConfig,
 }

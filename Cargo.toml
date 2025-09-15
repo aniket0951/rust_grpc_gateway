@@ -1,8 +1,8 @@
 [package]
 name = "grpc_gateway"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
-description="A GRPC Gateway which handle the http request and convert into GRPC"
+description = "A GRPC Gateway which handle the http request and convert into GRPC"
 license = "MIT"
 
 repository = "https://github.com/aniket0951/rust_grpc_gateway"
@@ -27,15 +27,15 @@ tonic-reflection = "0.14.1"
 tonic-web = "0.14.1"
 lazy_static = "1.4"
 actix-web = { version = "4.9.0", default-features = false, features = [
-    "macros",
-    "rustls",
+  "macros",
+  "rustls",
 ] }
 url = "2.4"
 reqwest = { version = "0.11", features = ["json", "blocking"] }
-jsonwebtoken = {version = "9", default-features = false }
+jsonwebtoken = { version = "9", default-features = false }
 
 chrono = { version = "0.4", features = ["serde"] }
-
+async-trait = "0.1"
 
 [build-dependencies]
 tonic-prost-build = "0.14.1"
