@@ -28,7 +28,7 @@ impl ReflectionDiscriptorManager {
 
         let manager = Self {
             cache: Arc::new(RwLock::new(CachedDescriptors::new())),
-            channel: channel,
+            channel,
             refresh_interval: Duration::from_secs(300), // 5 -min
             last_refresh: Arc::new(RwLock::new(Instant::now())),
         };
@@ -67,23 +67,6 @@ impl ReflectionDiscriptorManager {
         service: &str,
         method: &str,
     ) -> Result<Option<MethodDescriptor>> {
-        //check cache needs refresh
-        // {
-        //     let last_refresh = self.last_refresh.read().unwrap();
-        //     if last_refresh.elapsed() > self.refresh_interval {
-        //         drop(last_refresh);
-
-        //         // refresh auto, didn't block the request
-        //         let manager = self.clone();
-        //         tokio::spawn(async move {
-        //             match manager.refresh_discriptors().await {
-        //                 Err(e) => {}
-        //                 _ => (),
-        //             }
-        //         });
-        //     }
-        // }
-
         let cache = self.cache.read().unwrap();
         Ok(cache.get_method(service, method).cloned())
     }
@@ -104,11 +87,9 @@ impl ReflectionDiscriptorManager {
 }
 
 pub async fn get_discriptor_manager(endpoint: &str) -> Arc<ReflectionDiscriptorManager> {
-    let manager = Arc::new(
+    Arc::new(
         ReflectionDiscriptorManager::new(endpoint)
             .await
             .expect("msg"),
-    );
-
-    manager
+    )
 }

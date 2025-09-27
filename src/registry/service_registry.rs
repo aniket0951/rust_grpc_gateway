@@ -1,4 +1,5 @@
 use super::model::{AuthType, ServiceConfig};
+use crate::circuitbreaker::breaker::{self, CircuitBreaker, CircuitBreakerConfig};
 use crate::gateway::gateway::GrpcGateway;
 use crate::registry::api_key::APIKeyAuth;
 use crate::registry::auth::AuthConfig;
@@ -10,6 +11,7 @@ use crate::utils::validation_errors::ValidationError;
 use anyhow::Result;
 use serde_json::json;
 use std::error::Error;
+use std::time::Duration;
 use std::{collections::HashMap, sync::Mutex};
 
 use lazy_static::lazy_static;
@@ -43,6 +45,7 @@ impl RegistryTrait for ServiceRegistry {
             endpoint: val.to_string(),
             service_name: req.service_name.to_string(),
             auth_config: None,
+            breaker: None,
         };
 
         let validation_res = self
@@ -56,26 +59,27 @@ impl RegistryTrait for ServiceRegistry {
         }
 
         let auth_config = req.oauth_config.auth_refresh_config.unwrap();
-        //config.auth_config = Some(req.oauth_config);
-
         match req.oauth_config.auth_type {
             AuthType::APIKey => {
-                config.auth_config = Some(AuthConfig::APIKeyAuth(APIKeyAuth {
-                    header_name: auth_config.header_name,
-                    value: auth_config.access_token,
-                }));
+                config.auth_config = Some(AuthConfig::APIKeyAuth(APIKeyAuth::new(
+                    auth_config.header_name,
+                    auth_config.access_token,
+                )))
             }
             AuthType::JWTToken => {
-                config.auth_config = Some(AuthConfig::JWTTokenAuth(JWTTokenAuth {
-                    header_name: auth_config.header_name,
-                    access_token: auth_config.access_token,
-                    refresh_token: auth_config.refresh_token,
-                    expired_at: auth_config.expired_at,
-                    service_name: auth_config.service_name,
-                    method: auth_config.method,
-                }));
+                config.auth_config = Some(AuthConfig::JWTTokenAuth(JWTTokenAuth::new(
+                    auth_config.header_name,
+                    auth_config.access_token,
+                    auth_config.refresh_token,
+                    auth_config.expired_at,
+                    auth_config.service_name,
+                    auth_config.method,
+                )));
             }
         };
+        // add breaker with default config
+        let breaker = CircuitBreaker::new(CircuitBreakerConfig::default());
+        config.breaker = Some(breaker);
 
         match GLOBAL_MAP.lock() {
             Ok(mut mp) => {

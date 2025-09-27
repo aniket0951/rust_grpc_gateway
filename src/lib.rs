@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+use self::circuitbreaker::breaker::{CircuitBreaker, CircuitBreakerConfig};
 use self::gateway::gateway::GrpcGateway;
 use self::registry::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
@@ -12,7 +13,9 @@ use reqwest::StatusCode;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Mutex;
+use std::time::Duration;
 
+pub mod circuitbreaker;
 pub mod discriptor;
 pub mod gateway;
 pub mod registry;
@@ -24,6 +27,7 @@ lazy_static! {
 
 pub struct Gateway {
     pub service_registry: ServiceRegistry,
+    pub breaker: CircuitBreaker,
 }
 
 impl Default for Gateway {
@@ -36,6 +40,11 @@ impl Gateway {
     pub fn new() -> Self {
         Self {
             service_registry: ServiceRegistry {},
+            breaker: CircuitBreaker::new(CircuitBreakerConfig {
+                failure_threshold: 3,
+                recovery_timeout: Duration::from_secs(3),
+                half_open_max_calls: 2,
+            }),
         }
     }
     pub async fn invoker(&self, req: model::RequestType) -> Response {
@@ -51,7 +60,7 @@ impl Gateway {
         }
 
         let service_config = service.unwrap();
-
+        // should check the circute breaker is allowing or not to call the api
         let grpc_client = self.get_client(&service_config.endpoint).await;
         if grpc_client.is_err() {
             let e = grpc_client.err().unwrap();
@@ -72,11 +81,21 @@ impl Gateway {
             };
         }
         let client = grpc_client.unwrap();
-
-        match client
-            .invoke(&req.service, &req.method, req.data, service_config)
-            .await
-        {
+        let breaker = service_config.breaker.clone().unwrap();
+        let result = breaker
+            .call(|| async move {
+                let res = client
+                    .invoke(
+                        &req.service,
+                        &req.method,
+                        req.data.clone(),
+                        service_config.clone(),
+                    )
+                    .await?;
+                Ok(res)
+            })
+            .await;
+        match result {
             Ok(response) => {
                 let converted_data = serde_json::from_value(response).ok();
                 Response {
