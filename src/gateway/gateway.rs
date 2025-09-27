@@ -113,7 +113,6 @@ impl GrpcGateway {
             .get_method(service, method)
             .await?
             .ok_or_else(|| anyhow::anyhow!("Method {}.{} not found", service, method))?;
-
         // create request using cached
         let mut request_message = DynamicMessage::new(method_desc.input());
         self.json_to_dynamic_message(&data, &mut request_message)?;

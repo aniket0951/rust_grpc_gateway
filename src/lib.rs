@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-use self::circuitbreaker::breaker::{self, CircuitBreaker, CircuitBreakerConfig};
+use self::circuitbreaker::breaker::{CircuitBreaker, CircuitBreakerConfig};
 use self::gateway::gateway::GrpcGateway;
 use self::registry::service_registry::{RegistryTrait, ServiceRegistry};
 use self::utils::errors::ResponseErrors;
@@ -11,7 +11,6 @@ use lazy_static::lazy_static;
 use reqwest::StatusCode;
 
 use std::collections::HashMap;
-use std::error::Error as StdError;
 use std::error::Error;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -82,9 +81,8 @@ impl Gateway {
             };
         }
         let client = grpc_client.unwrap();
-
-        let result = self
-            .breaker
+        let breaker = service_config.breaker.clone().unwrap();
+        let result = breaker
             .call(|| async move {
                 let res = client
                     .invoke(
@@ -124,36 +122,6 @@ impl Gateway {
                 }
             }
         }
-        // match client
-        //     .invoke(&req.service, &req.method, req.data, service_config)
-        //     .await
-        // {
-        //     Ok(response) => {
-        //         let converted_data = serde_json::from_value(response).ok();
-        //         Response {
-        //             message: ResponseErrors::Success.message(),
-        //             status: ResponseErrors::Success.message(),
-        //             data: converted_data,
-        //             status_code: StatusCode::OK,
-        //         }
-        //     }
-        //     Err(e) => {
-        //         if e.to_string().to_lowercase().contains("status: unavailable") {
-        //             return Response {
-        //                 message: ResponseErrors::ServiceUnAvailable.message(),
-        //                 status: ResponseErrors::Error.message(),
-        //                 data: None,
-        //                 status_code: StatusCode::SERVICE_UNAVAILABLE,
-        //             };
-        //         }
-        //         Response {
-        //             message: std::borrow::Cow::Owned(e.to_string()),
-        //             status: ResponseErrors::Error.message(),
-        //             data: None,
-        //             status_code: StatusCode::BAD_REQUEST,
-        //         }
-        //     }
-        // }
     }
 
     async fn get_client(&self, service_endpoint: &str) -> Result<GrpcGateway, Box<dyn Error>> {

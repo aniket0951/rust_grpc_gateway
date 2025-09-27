@@ -2,13 +2,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
+use crate::utils::errors::ResponseErrors;
+
 #[derive(Debug, Clone)]
 pub struct CircuitBreaker {
     state: Arc<RwLock<CircuitBreakerInternalState>>,
     config: CircuitBreakerConfig,
 }
 
-// Single state structure - only one lock needed
 #[derive(Debug, Clone)]
 struct CircuitBreakerInternalState {
     current_state: CircuitBreakerState,
@@ -35,7 +36,7 @@ impl Default for CircuitBreakerConfig {
     fn default() -> Self {
         Self {
             failure_threshold: 5,
-            recovery_timeout: Duration::from_secs(100),
+            recovery_timeout: Duration::from_secs(30),
             half_open_max_calls: 2,
         }
     }
@@ -70,7 +71,6 @@ impl CircuitBreaker {
                 }
             }
             CircuitBreakerState::HalfOpen => {
-                println!("start half open");
                 if state.half_open_request >= self.config.half_open_max_calls {
                     false
                 } else {
@@ -134,7 +134,9 @@ impl CircuitBreaker {
         Fut: std::future::Future<Output = Result<T, anyhow::Error>>,
     {
         if !self.is_allowed().await {
-            return Err(anyhow::anyhow!("Circuit breaker is open"));
+            return Err(anyhow::anyhow!(
+                ResponseErrors::ServiceUnAvailable.to_string()
+            ));
         }
 
         let result = f().await;

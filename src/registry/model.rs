@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::circuitbreaker::breaker::CircuitBreaker;
 use crate::registry::auth::AuthConfig;
 
 #[derive(Debug, Clone)]
@@ -28,8 +29,8 @@ pub struct InternalAuthConfig {
 pub struct ServiceConfig {
     pub endpoint: String,
     pub service_name: String,
-    //pub auth_config: Option<Arc<dyn Auth>>,
     pub auth_config: Option<AuthConfig>,
+    pub breaker: Option<CircuitBreaker>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

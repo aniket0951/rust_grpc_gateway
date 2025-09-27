@@ -29,6 +29,23 @@ impl Auth for JWTTokenAuth {
 }
 
 impl JWTTokenAuth {
+    pub fn new(
+        header_name: String,
+        access_token: String,
+        refresh_token: String,
+        expired_at: u64,
+        service_name: String,
+        method: String,
+    ) -> Self {
+        Self {
+            header_name,
+            access_token,
+            refresh_token,
+            expired_at,
+            service_name,
+            method,
+        }
+    }
     pub async fn refresh_token(
         &mut self,
         service_endpoint: &str,

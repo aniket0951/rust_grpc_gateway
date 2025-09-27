@@ -50,13 +50,10 @@ impl CachedDescriptors {
         // Extract service names
         while let Some(resp) = response_stream.message().await? {
             if let Some(message_response) = resp.message_response {
-                match message_response {
-                    tonic_reflection::pb::v1::server_reflection_response::MessageResponse::ListServicesResponse(services_resp) => {
-                        for service in services_resp.service {
-                            service_names.push(service.name);
-                        }
+                if let tonic_reflection::pb::v1::server_reflection_response::MessageResponse::ListServicesResponse(services_resp) = message_response {
+                    for service in services_resp.service {
+                        service_names.push(service.name);
                     }
-                    _ => {}
                 }
             }
         }
@@ -80,14 +77,11 @@ impl CachedDescriptors {
 
             while let Some(resp) = response_stream.message().await? {
                 if let Some(message_response) = resp.message_response {
-                    match message_response {
-                        tonic_reflection::pb::v1::server_reflection_response::MessageResponse::FileDescriptorResponse(fd_resp) => {
-                            for fd_bytes in fd_resp.file_descriptor_proto {
-                                let file_descriptor = FileDescriptorProto::decode(fd_bytes.as_slice())?;
-                                all_file_descriptors.push(file_descriptor);
-                            }
+                    if let tonic_reflection::pb::v1::server_reflection_response::MessageResponse::FileDescriptorResponse(fd_resp) = message_response {
+                        for fd_bytes in fd_resp.file_descriptor_proto {
+                            let file_descriptor = FileDescriptorProto::decode(fd_bytes.as_slice())?;
+                            all_file_descriptors.push(file_descriptor);
                         }
-                        _ => {}
                     }
                 }
             }
@@ -140,5 +134,11 @@ impl CachedDescriptors {
 
     pub fn is_stable(&self, max_age: time::Duration) -> bool {
         self.last_updated_at.elapsed() > max_age
+    }
+}
+
+impl Default for CachedDescriptors {
+    fn default() -> Self {
+        Self::new()
     }
 }
